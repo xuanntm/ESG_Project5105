@@ -1,0 +1,11 @@
+PyPDF2
+gensim
+nltk
+WordCloud
+pdfminer3
+mlflow
+spacy
+pyLDAvis
+notebook
+seaborn
+yfinance
