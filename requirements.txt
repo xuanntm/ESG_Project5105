@@ -9,3 +9,5 @@ pyLDAvis
 notebook
 seaborn
 yfinance
+openai
+dotenv

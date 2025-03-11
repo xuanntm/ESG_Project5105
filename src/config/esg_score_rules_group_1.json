@@ -1,0 +1,110 @@
+[
+    {
+        "metric_label": "E01_GHG_01_TOTAL",
+        "standard_value": 3000,
+        "standard_score": 10,
+        "unit": "tCO2e",
+        "rules": [
+            {
+                "min_value": 0,
+                "max_value": 2800,
+                "score": 10
+            },
+            {
+                "min_value": 2800,
+                "max_value": 3200,
+                "score": 9
+            },
+            {
+                "min_value": 3200,
+                "max_value": 3500,
+                "score": 5
+            },
+            {
+                "min_value": 3500,
+                "score": 1
+            }
+        ]
+    },
+    {
+        "metric_label": "E01_GHG_02_TOTAL",
+        "standard_value": 1000,
+        "standard_score": 10,
+        "unit": "tCO2e",
+        "rules": [
+            {
+                "min_value": 0,
+                "max_value": 950,
+                "score": 10
+            },
+            {
+                "min_value": 950,
+                "max_value": 1050,
+                "score": 9
+            },
+            {
+                "min_value": 1050,
+                "max_value": 1150,
+                "score": 5
+            },
+            {
+                "min_value": 1150,
+                "score": 1
+            }
+        ]
+    },
+    {
+        "metric_label": "E01_GHG_03_TOTAL",
+        "standard_value": 1000,
+        "standard_score": 10,
+        "unit": "tCO2e",
+        "rules": [
+            {
+                "min_value": 0,
+                "max_value": 950,
+                "score": 10
+            },
+            {
+                "min_value": 950,
+                "max_value": 1050,
+                "score": 9
+            },
+            {
+                "min_value": 1050,
+                "max_value": 1150,
+                "score": 5
+            },
+            {
+                "min_value": 1150,
+                "score": 1
+            }
+        ]
+    },
+    {
+        "metric_label": "E01_GHG_04_TOTAL",
+        "standard_value": 1000,
+        "standard_score": 10,
+        "unit": "tCO2e",
+        "rules": [
+            {
+                "min_value": 0,
+                "max_value": 950,
+                "score": 10
+            },
+            {
+                "min_value": 950,
+                "max_value": 1050,
+                "score": 9
+            },
+            {
+                "min_value": 1050,
+                "max_value": 1150,
+                "score": 5
+            },
+            {
+                "min_value": 1150,
+                "score": 1
+            }
+        ]
+    }
+]

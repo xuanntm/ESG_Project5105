@@ -1,0 +1,46 @@
+[
+    {
+        "subject_label": "E",
+        "subject_name": "Environment",
+        "topic_label": "E01_GHG",
+        "topic_name": "Greenhouse Gas Emissions",
+        "metric_label": "E01_GHG_01_TOTAL",
+        "metric_name": "Absolute emissions by total",
+        "stanrdard_value": 1000,
+        "unit": "tCO2e",
+        "rules": ["greater is better"]
+    },
+    {
+        "subject_label": "E",
+        "subject_name": "Environment",
+        "topic_label": "E01_GHG",
+        "topic_name": "Greenhouse Gas Emissions",
+        "metric_label": "E01_GHG_02_TOTAL",
+        "metric_name": "Absolute emissions by Scope 1",
+        "stanrdard_value": 1000,
+        "unit": "tCO2e",
+        "rules": ["greater is better"]
+    },
+    {
+        "subject_label": "E",
+        "subject_name": "Environment",
+        "topic_label": "E01_GHG",
+        "topic_name": "Greenhouse Gas Emissions",
+        "metric_label": "E01_GHG_03_TOTAL",
+        "metric_name": "Absolute emissions by Scope 2",
+        "stanrdard_value": 1000,
+        "unit": "tCO2e",
+        "rules": ["lower is better"]
+    },
+    {
+        "subject_label": "E",
+        "subject_name": "Environment",
+        "topic_label": "E01_GHG",
+        "topic_name": "Greenhouse Gas Emissions",
+        "metric_label": "E01_GHG_04_TOTAL",
+        "metric_name": "Absolute emissions by Scope 3",
+        "stanrdard_value": 1000,
+        "unit": "tCO2e",
+        "rules": ["greater is better"]
+    }
+]

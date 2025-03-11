@@ -10,3 +10,8 @@ pip install -r requirements.txt
 
 pip list
 pip freeze > requirements_2025_03_08.txt
+
+
+Step1: PDF -> raw Text
+Step 2: raw text -> cleaned text
+Step 3: cleaned text -> Pre NLP process
