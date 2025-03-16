@@ -1,7 +1,3 @@
 {
-    "carbon_emissions": "Metrics related to CO2 emissions",
-    "renewable_energy": "Percentage of energy from renewable sources",
-    "social_impact": "Community and employee engagement metrics",
-    "bridging the gap between": "LABEL_1",
-    "initiative and has had a leadership role": "LABEL_2"
+    "E01_GHG_01_TOTAL": "total emissions in ton"
 }

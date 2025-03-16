@@ -11,3 +11,5 @@ seaborn
 yfinance
 openai
 dotenv
+Flask
+PyMuPDF

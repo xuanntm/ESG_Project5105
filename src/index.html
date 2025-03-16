@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Upload and Text Extraction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        input[type="file"],
+        input[type="text"] {
+            margin-bottom: 10px;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+
+        #response,
+        #textResponse {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Upload PDF File</h1>
+    <input type="file" id="fileInput" accept="application/pdf">
+    <button onclick="uploadFile()">Upload</button>
+
+    <div id="response"></div>
+
+    <h1>Extract Text from PDF</h1>
+    <input type="text" id="fileLocationInput" placeholder="Enter file location">
+    <button onclick="extractText()">Extract Text</button>
+
+    <div id="textResponse"></div>
+
+    <h1>Extract Relevant ESG Sentences</h1>
+    <input type="text" id="esgIndicators" placeholder="Enter ESG indicators, separated by commas">
+    <button onclick="extractESGSentences()">Extract ESG Sentences</button>
+
+    <div id="esgResponse"></div>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const responseDiv = document.getElementById('response');
+
+            if (!fileInput.files.length) {
+                responseDiv.innerText = 'Please select a file.';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.innerText = 'File uploaded successfully! Location: ' + data.file_location;
+                } else {
+                    responseDiv.innerText = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                responseDiv.innerText = 'Error: ' + error.message;
+            }
+        }
+
+        async function extractText() {
+            const fileLocationInput = document.getElementById('fileLocationInput');
+            const textResponseDiv = document.getElementById('textResponse');
+
+            let fileLocation = fileLocationInput.value.trim(); // Trim white spaces
+
+            if (!fileLocation) {
+                textResponseDiv.innerText = 'Please enter a file location.';
+                return;
+            }
+
+            // Ensure the file location is URL-encoded
+            const encodedFileLocation = encodeURIComponent(fileLocation);
+
+            try {
+                const response = await fetch('/extract-text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ file_location: encodedFileLocation }),
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    textResponseDiv.innerText = 'Extracted Text: ' + data.extracted_text;
+                } else {
+                    textResponseDiv.innerText = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                textResponseDiv.innerText = 'Error: ' + error.message;
+            }
+        }
+
+        async function extractESGSentences() {
+            const esgIndicatorsInput = document.getElementById('esgIndicators');
+            const esgResponseDiv = document.getElementById('esgResponse');
+
+            const esgIndicators = esgIndicatorsInput.value.split(',').map(item => item.trim());
+            const extractedText = document.getElementById('textResponse').innerText || '';
+
+            if (esgIndicators.length === 0 || !extractedText) {
+                esgResponseDiv.innerText = 'Please enter ESG indicators and ensure text is extracted.';
+                return;
+            }
+
+            try {
+                const response = await fetch('/extract-esg-sentences', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        extracted_text: extractedText.replace('Extracted Text: ', ''),
+                        esg_indicators: esgIndicators
+                    }),
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.relevant_sentences.length > 0) {
+                        esgResponseDiv.innerText = 'Relevant ESG Sentences: ' + data.relevant_sentences.join(', ');
+                    } else {
+                        esgResponseDiv.innerText = 'No relevant sentences found for the given ESG indicators.';
+                    }
+                } else {
+                    esgResponseDiv.innerText = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                esgResponseDiv.innerText = 'Error: ' + error.message;
+            }
+        }
+
+        async function extractESGSentences() {
+            const esgIndicatorsInput = document.getElementById('esgIndicators');
+            const esgResponseDiv = document.getElementById('esgResponse');
+
+            const esgIndicators = esgIndicatorsInput.value.split(',').map(item => item.trim());
+            const extractedText = document.getElementById('textResponse').innerText || '';
+
+            if (esgIndicators.length === 0 || !extractedText) {
+                esgResponseDiv.innerText = 'Please enter ESG indicators and ensure text is extracted.';
+                return;
+            }
+
+            // Step 1: Extract relevant ESG sentences
+            try {
+                const response = await fetch('/extract-esg-sentences', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        extracted_text: extractedText.replace('Extracted Text: ', ''),
+                        esg_indicators: esgIndicators
+                    }),
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    esgResponseDiv.innerText = 'Error: ' + (data.error || 'Unknown error');
+                    return;
+                }
+
+                const relevantSentences = data.relevant_sentences;
+
+                if (relevantSentences.length > 0) {
+                    // Step 2: Send relevant ESG sentences to ChatGPT
+                    const chatGptResponse = await fetch('/process-esg-data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            sentences: relevantSentences
+                        }),
+                    });
+                    const chatGptData = await chatGptResponse.json();
+
+                    if (chatGptResponse.ok) {
+                        esgResponseDiv.innerText = 'Extracted Metric Values: ' + chatGptData.metric_values;
+                    } else {
+                        esgResponseDiv.innerText = 'ChatGPT Error: ' + (chatGptData.error || 'Unknown error');
+                    }
+                } else {
+                    esgResponseDiv.innerText = 'No relevant sentences found for the given ESG indicators.';
+                }
+            } catch (error) {
+                esgResponseDiv.innerText = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+
+</html>
