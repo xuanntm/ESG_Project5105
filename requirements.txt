@@ -13,3 +13,7 @@ openai
 dotenv
 Flask
 PyMuPDF
+pdfplumber
+pytesseract
+pdfminer.six
+opencv-python

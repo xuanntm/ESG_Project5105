@@ -25,18 +25,66 @@
             margin-top: 20px;
             font-weight: bold;
         }
+
+        .select-container {
+            margin-top: 10px;
+        }
+
+        .input-container {
+            margin-top: 10px;
+        }
+
+        #fileLocationInput {
+            width: 600px;
+            /* Or any desired width */
+        }
     </style>
 </head>
 
 <body>
     <h1>Upload PDF File</h1>
+
+    <div class="select-container">
+        <label for="companies">Select Companies:</label>
+        <!-- multiple -->
+        <select id="company">
+            <option value="Company A">Company A</option>
+            <option value="Company B">Company B</option>
+            <option value="Company C">Company C</option>
+            <!-- Add more companies here -->
+        </select>
+    </div>
+
+    <div class="select-container">
+        <label for="reportYear">Select Report Year:</label>
+        <select id="reportYear">
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+            <option value="2021">2021</option>
+            <!-- Add more years here -->
+        </select>
+    </div>
     <input type="file" id="fileInput" accept="application/pdf">
     <button onclick="uploadFile()">Upload</button>
 
     <div id="response"></div>
 
     <h1>Extract Text from PDF</h1>
-    <input type="text" id="fileLocationInput" placeholder="Enter file location">
+    <!-- <input type="text" id="fileLocationInput" placeholder="Enter file location" maxlength="200"> -->
+    <div>
+        <label for="fileLocationInput">File Location:</label>
+        <input type="text" id="fileLocationInput" readonly>
+    </div>
+
+    <div class="input-container">
+        <label for="header-height">Header Height (%):</label>
+        <input type="number" id="header-height" min="5" max="20" step="1" value="5">
+    </div>
+
+    <div class="input-container">
+        <label for="footer-height">Footer Height (%):</label>
+        <input type="number" id="footer-height" min="5" max="20" step="1" value="5">
+    </div>
     <button onclick="extractText()">Extract Text</button>
 
     <div id="textResponse"></div>
@@ -50,15 +98,24 @@
     <script>
         async function uploadFile() {
             const fileInput = document.getElementById('fileInput');
+            const companySelect = document.getElementById('company');
+            const reportYearSelect = document.getElementById('reportYear');
             const responseDiv = document.getElementById('response');
+            const fileLocationInput = document.getElementById('fileLocationInput');
 
             if (!fileInput.files.length) {
                 responseDiv.innerText = 'Please select a file.';
                 return;
             }
 
+            const company = companySelect.value;
+            const reportYear = reportYearSelect.value;
+
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
+            formData.append('company', company);
+            formData.append('reportYear', reportYear);
+
 
             try {
                 const response = await fetch('/upload', {
@@ -66,9 +123,10 @@
                     body: formData
                 });
                 const data = await response.json();
-
                 if (response.ok) {
-                    responseDiv.innerText = 'File uploaded successfully! Location: ' + data.file_location;
+                    responseDiv.innerText = 'File uploaded successfully! Location: ';
+                    //  + data.file_location;
+                    fileLocationInput.value = data.file_location;
                 } else {
                     responseDiv.innerText = 'Error: ' + (data.error || 'Unknown error');
                 }
@@ -79,6 +137,8 @@
 
         async function extractText() {
             const fileLocationInput = document.getElementById('fileLocationInput');
+            const headerHeight = document.getElementById('header-height').value;
+            const footerHeight = document.getElementById('footer-height').value;
             const textResponseDiv = document.getElementById('textResponse');
 
             let fileLocation = fileLocationInput.value.trim(); // Trim white spaces
@@ -90,6 +150,8 @@
 
             // Ensure the file location is URL-encoded
             const encodedFileLocation = encodeURIComponent(fileLocation);
+            const header_height_percent = headerHeight / 100;
+            const footer_height_percent = footerHeight / 100;
 
             try {
                 const response = await fetch('/extract-text', {
@@ -97,7 +159,11 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ file_location: encodedFileLocation }),
+                    body: JSON.stringify({
+                        file_location: encodedFileLocation,
+                        header_height_percent: header_height_percent,
+                        footer_height_percent: footer_height_percent
+                    }),
                 });
                 const data = await response.json();
 

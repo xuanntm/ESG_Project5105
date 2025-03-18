@@ -1,4 +1,5 @@
-import os, io, re, string
+import os, io, re, string, fitz
+import PyPDF2, pdfplumber
 
 # PDF text extraction
 from pdfminer3.layout import LAParams, LTTextBox
@@ -8,10 +9,63 @@ from pdfminer3.pdfinterp import PDFPageInterpreter
 from pdfminer3.converter import PDFPageAggregator
 from pdfminer3.converter import TextConverter
 
+from pdfminer.high_level import extract_text
+
 from .nlp_service import nlp
+import subprocess
+import cv2
+
+from PIL import Image
+import pytesseract
+import uuid
+from dotenv import load_dotenv
+load_dotenv()
+
+IMAGE_FOLDER=os.environ.get("05_IMAGE_FOLDER")
 
 
-def extract_content_from_pdf(pdf_file_path):
+
+
+def remove_header_footer(image_path, header_height_percent=0.05, footer_height_percent=0.05):
+    print(f'remove_header_footer: {image_path}')
+    img = cv2.imread(image_path)
+    height, width = img.shape[:2]
+    header_height = int(height * header_height_percent)
+    footer_height = int(height * footer_height_percent)
+
+    cropped_img = img[header_height:height - footer_height, 0:width]
+    cv2.imwrite(image_path, cropped_img)
+
+def convert_pdf_to_images(pdf_path, output_dir):
+    process_id = uuid.uuid4().hex
+    output_dir = output_dir + '/' + process_id
+    print(f'convert_pdf_to_images:{pdf_path}-{output_dir}')
+    os.makedirs(output_dir, exist_ok=True)
+    subprocess.run(['gs', '-dNOPAUSE', '-dBATCH', '-sDEVICE=pngalpha', '-r300', '-sOutputFile=' + os.path.join(output_dir, 'page%d.png'), pdf_path])
+    return output_dir
+
+
+def extract_pdf_by_ocr(folder_location, header_height_percent, footer_height_percent, verbose=False):
+    output_dir = convert_pdf_to_images(folder_location, IMAGE_FOLDER)
+    print(f'output_dir:{output_dir}')
+    all_text = ""
+    content = []
+    for filename in sorted(os.listdir(output_dir)):
+        print(f'process filename:{filename}')
+        if filename.endswith('.png'):
+            img_path = os.path.join(output_dir, filename)
+            remove_header_footer(img_path, header_height_percent, footer_height_percent) # Remove header and footer from the image
+            img = Image.open(img_path)
+            text = pytesseract.image_to_string(img)
+            # print(f'text from OCR:{text}')
+            # all_text += text + "\n\n"  # Add a separator between pages
+            content.append(text)
+    all_text = '##PAGE_BREAK##'.join(content)
+    return all_text
+
+
+def extract_content_from_pdf_by_ocr(pdf_file_path, header_height_percent, footer_height_percent):
+    print('=== START === extract_content_from_pdf')
     """
     A simple user define function that, given a url, download PDF text content
     Parse PDF and return plain text version
@@ -19,19 +73,44 @@ def extract_content_from_pdf(pdf_file_path):
     headers={"User-Agent":"Mozilla/5.0"}
 
     try:
-        with open(pdf_file_path, 'rb') as file:
-            pdf_bytes = file.read()
-        # access pdf content
-        text = extract_pdf(io.BytesIO(pdf_bytes), True)
+        # with open(pdf_file_path, 'rb') as file:
+        #     pdf_bytes = file.read()
+        # # access pdf content
+        # text = extract_pdf(io.BytesIO(pdf_bytes), True)
+        # folder_path = '/'.join(pdf_file_path.split('/')[0:-1])
+        text = extract_pdf_by_ocr(pdf_file_path, header_height_percent, footer_height_percent, True)
 
+        # return concatenated content
+        print(f'text:{text}')
+        return text
+
+    except:
+        return ""
+
+def extract_content_from_pdf(pdf_file_path):
+    print('=== START === extract_content_from_pdf')
+    """
+    A simple user define function that, given a url, download PDF text content
+    Parse PDF and return plain text version
+    """
+    headers={"User-Agent":"Mozilla/5.0"}
+
+    try:
+        # with open(pdf_file_path, 'rb') as file:
+        #     pdf_bytes = file.read()
+        # # access pdf content
+        # text = extract_pdf(io.BytesIO(pdf_bytes), True)
+
+        text = extract_pdf(pdf_file_path, True)
+        print(f'text extracted:{text}')
         # return concatenated content
         return text
 
     except:
         return ""
 
-def extract_pdf(file, verbose=False):
-    
+def extract_pdf_byte(file, verbose=False):
+    print('=== START === extract_pdf')
     if verbose:
         print('Processing {}'.format(file))
 
@@ -88,13 +167,56 @@ def extract_pdf(file, verbose=False):
         return ""
 
 
+
+def extract_pdf(file_location, verbose=False):
+    print('=== START === extract_pdf')
+    if verbose:
+        print('Processing {}'.format(file_location))
+    index = 0
+    try:
+        content = []
+        # pdf_document = fitz.open(file_location)
+        # for page in pdf_document:
+        #     index = index + 1
+        #     print(f'_index {index}: {page.get_text()}')
+        #     content.append(page.get_text())
+        
+        # pdf_reader = PyPDF2.PdfReader(file_location)
+        # print(f'_index start {index}')
+        # for page in pdf_reader.pages:
+        #     index = index + 1
+        #     print(f'_index {index}: {page.extract_text()}')
+        #     content.append(page.extract_text() or '')  # Handle None case
+
+        # with pdfplumber.open(file_location) as pdf:
+        #     for page in pdf.pages:
+        #         # Extract text, ignoring tables
+        #         if page.extract_tables():  # Check if there are tables
+        #             continue  # Ignore this page if it has tables
+        #         index = index + 1
+        #         print(f'_index {index}: {page.extract_text()}')
+        #         content.append(page.extract_text() or '')  # Handle None case
+
+        text = extract_text(file_location)
+
+        # text = '##PAGE_BREAK##'.join(content)
+        
+        return text
+
+    except Exception as e:
+        print(e)
+
+        return ""
+
 def remove_non_ascii(text):
+    print('=== START === remove_non_ascii')
     printable = set(string.printable)
     return ''.join(filter(lambda x: x in printable, text))
 
 
 # def extract_sentences(nlp, text):
 def extract_sentences(text):
+    print('=== START === extract_sentences')
     """
     Extracting ESG statements from raw text by removing junk, URLs, etc.
     We group consecutive lines into paragraphs and use spacy to parse sentences.

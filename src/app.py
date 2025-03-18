@@ -3,9 +3,10 @@ import os, json
 import fitz  # PyMuPDF
 from dotenv import load_dotenv
 import urllib.parse
-from service.extract_service import extract_sentences, extract_content_from_pdf
+from service.extract_service import extract_sentences, extract_content_from_pdf, extract_content_from_pdf_by_ocr
 from service.nlp_service import nlp
 from service.openAI_service import openai_client
+import PyPDF2
 
 load_dotenv()
 
@@ -38,9 +39,13 @@ def upload_file():
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
+    company = request.form.get('company')  # Get from FormData
+    reportYear = request.form.get('reportYear')  # Get from FormData
 
     if file and allowed_file(file.filename):
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file_folder = os.path.join(app.config['UPLOAD_FOLDER'], company, reportYear)
+        os.makedirs(file_folder, exist_ok=True)
+        file_path = os.path.join(file_folder, file.filename)
         file.save(file_path)
         return jsonify({'file_location': file_path}), 201
 
@@ -50,6 +55,8 @@ def upload_file():
 def extract_text():
     data = request.json
     file_location = data.get('file_location')
+    header_height_percent = data.get('header_height_percent', 0.05)
+    footer_height_percent = data.get('footer_height_percent', 0.05)
 
     # Decode the file_location if necessary
     decoded_file_location = urllib.parse.unquote(file_location)
@@ -68,16 +75,21 @@ def extract_text():
         # for page in pdf_document:
         #     text += page.get_text()
         # pdf_document.close()
-        text = extract_content_from_pdf(decoded_file_location)
+        text = extract_content_from_pdf_by_ocr(decoded_file_location, header_height_percent, footer_height_percent)
         # print(f'text:{text[0:100]}')
 
         report_pages, report_sentences = extract_sentences(text)
-        print(f'report_pages:{report_pages[0][0:100]}')
+        # print(f'report_pages:{report_pages[0][0:100]}')
         # print(f'report_sentences:{report_sentences}')
         
-        return jsonify({'extracted_text': report_pages}), 200
+        return jsonify({'extracted_text': report_sentences}), 200
+
+        # return jsonify({'extracted_text': text}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+
 
 
 @app.route('/extract-esg-sentences', methods=['POST'])
