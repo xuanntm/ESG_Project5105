@@ -3,7 +3,7 @@ import os, json
 import fitz  # PyMuPDF
 from dotenv import load_dotenv
 import urllib.parse
-from service.extract_service import extract_sentences, extract_content_from_pdf, extract_content_from_pdf_by_ocr
+from service.extract_service import extract_sentences, extract_content_from_pdf, extract_content_from_pdf_by_ocr, ESG_TEXT_FOLDER
 from service.nlp_service import nlp
 from service.openAI_service import openai_client
 import PyPDF2
@@ -88,6 +88,64 @@ def extract_text():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/process-pdf', methods=['POST'])
+def process_pdf():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    company = request.form.get('company')  # Get from FormData
+    reportYear = request.form.get('reportYear')  # Get from FormData
+
+    if file and allowed_file(file.filename):
+        file_folder = os.path.join(app.config['UPLOAD_FOLDER'], company, reportYear)
+        os.makedirs(file_folder, exist_ok=True)
+        file_path = os.path.join(file_folder, file.filename)
+        file.save(file_path)
+
+
+    file_location = file_path
+    header_height_percent = float(request.form.get('header_height_percent', 0.05))
+    footer_height_percent = float(request.form.get('footer_height_percent', 0.05))
+
+    # Decode the file_location if necessary
+    decoded_file_location = urllib.parse.unquote(file_location)
+    print(f'decoded_file_location:{decoded_file_location}')
+
+    if not os.path.exists(decoded_file_location):
+        return jsonify({'error': 'File not found'}), 404
+
+    if not allowed_file(decoded_file_location):
+        return jsonify({'error': 'Invalid file type'}), 400
+
+    # Extract text from PDF
+    text = ""
+    try:
+        # pdf_document = fitz.open(decoded_file_location)
+        # for page in pdf_document:
+        #     text += page.get_text()
+        # pdf_document.close()
+        text = extract_content_from_pdf_by_ocr(decoded_file_location, header_height_percent, footer_height_percent)
+        
+
+        report_pages, report_sentences = extract_sentences(text)
+        # print(f'report_pages:{report_pages[0][0:100]}')
+        # print(f'report_sentences:{report_sentences}')
+
+        # Save extracted text to a new folder
+        filename_no_ext = os.path.splitext(file.filename)[0]
+        output_filepath = os.path.join(ESG_TEXT_FOLDER, filename_no_ext + '.txt')
+        with open(output_filepath, 'w') as f:
+            for report_sentence in report_sentences:
+                f.write(report_sentence + " ")
+        
+        return jsonify({'message': 'File processed and text saved successfully!', 'output_filepath': output_filepath}), 200
+
+        # return jsonify({'extracted_text': text}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 

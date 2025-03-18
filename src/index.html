@@ -38,6 +38,29 @@
             width: 600px;
             /* Or any desired width */
         }
+
+        #loading-overlay {
+            /* visibility: hidden; */
+            display: none;
+            /* Initially hidden */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            /* Semi-transparent background */
+            z-index: 1000;
+            /* Ensure it's on top */
+            justify-content: center;
+            align-items: center;
+            /* display: flex; */
+        }
+
+        #loading-message {
+            font-size: 2em;
+            color: white;
+        }
     </style>
 </head>
 
@@ -48,9 +71,9 @@
         <label for="companies">Select Companies:</label>
         <!-- multiple -->
         <select id="company">
-            <option value="Company A">Company A</option>
-            <option value="Company B">Company B</option>
-            <option value="Company C">Company C</option>
+            <option value="ComA">Company A</option>
+            <option value="ComB">Company B</option>
+            <option value="ComC">Company C</option>
             <!-- Add more companies here -->
         </select>
     </div>
@@ -64,18 +87,6 @@
             <!-- Add more years here -->
         </select>
     </div>
-    <input type="file" id="fileInput" accept="application/pdf">
-    <button onclick="uploadFile()">Upload</button>
-
-    <div id="response"></div>
-
-    <h1>Extract Text from PDF</h1>
-    <!-- <input type="text" id="fileLocationInput" placeholder="Enter file location" maxlength="200"> -->
-    <div>
-        <label for="fileLocationInput">File Location:</label>
-        <input type="text" id="fileLocationInput" readonly>
-    </div>
-
     <div class="input-container">
         <label for="header-height">Header Height (%):</label>
         <input type="number" id="header-height" min="5" max="20" step="1" value="5">
@@ -85,9 +96,26 @@
         <label for="footer-height">Footer Height (%):</label>
         <input type="number" id="footer-height" min="5" max="20" step="1" value="5">
     </div>
-    <button onclick="extractText()">Extract Text</button>
+    <input type="file" id="fileInput" accept="application/pdf">
+    <button onclick="uploadFileV2()">Upload and Process</button>
 
-    <div id="textResponse"></div>
+    <div id="response"></div>
+    <div id="loading-overlay">
+        <div id="loading-message">Loading...</div>
+    </div>
+
+    <!-- <h1>Extract Text from PDF</h1> -->
+    <!-- <input type="text" id="fileLocationInput" placeholder="Enter file location" maxlength="200"> -->
+    <div>
+        <label for="fileLocationInput">File Location:</label>
+        <input type="text" id="fileLocationInput" readonly>
+    </div>
+
+
+
+    <!-- <button onclick="extractText()">Extract Text</button>
+
+    <div id="textResponse"></div> -->
 
     <h1>Extract Relevant ESG Sentences</h1>
     <input type="text" id="esgIndicators" placeholder="Enter ESG indicators, separated by commas">
@@ -96,6 +124,58 @@
     <div id="esgResponse"></div>
 
     <script>
+        async function uploadFileV2() {
+            const fileInput = document.getElementById('fileInput');
+            const company = document.getElementById('company').value;
+            const reportYear = document.getElementById('reportYear').value;
+            const headerHeight = document.getElementById('header-height').value;
+            const footerHeight = document.getElementById('footer-height').value;
+            const responseDiv = document.getElementById('response');
+
+
+            if (!fileInput.files.length) {
+                responseDiv.innerText = 'Please select a file.';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('company', company);
+            formData.append('reportYear', reportYear);
+            formData.append('header_height_percent', headerHeight / 100);
+            formData.append('footer_height_percent', footerHeight / 100);
+
+            responseDiv.innerText = ''; // Clear previous messages
+
+            // document.getElementById('loading-overlay').style.visibility = 'visible';
+            document.body.style.overflow = 'hidden'; //Prevent scrolling while loading
+            document.getElementById('loading-overlay').style.display = 'flex'; // Show overlay
+            try {
+                const response = await fetch('/process-pdf', { // Changed to /process-pdf
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                document.getElementById('loading-overlay').style.display = 'none'; // Hide overlay
+                // document.getElementById('loading-overlay').style.visibility = 'hidden';
+                document.body.style.overflow = 'auto'; // Allow scrolling again
+
+                if (response.ok) {
+                    responseDiv.innerText = data.message; // Display the success message
+                    fileLocationInput.value = data.output_filepath
+                } else {
+                    responseDiv.innerText = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                document.getElementById('loading-overlay').style.display = 'none'; // Hide overlay
+                // document.getElementById('loading-overlay').style.visibility = 'hidden';
+                document.body.style.overflow = 'auto'; // Allow scrolling again
+                responseDiv.innerText = 'Error: ' + error.message;
+            }
+        }
+
+
         async function uploadFile() {
             const fileInput = document.getElementById('fileInput');
             const companySelect = document.getElementById('company');

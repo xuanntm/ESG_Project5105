@@ -23,25 +23,26 @@ load_dotenv()
 
 IMAGE_FOLDER=os.environ.get("05_IMAGE_FOLDER")
 
-
+ESG_TEXT_FOLDER=os.environ.get("03_ESG_TEXT_FOLDER")
 
 
 def remove_header_footer(image_path, header_height_percent=0.05, footer_height_percent=0.05):
-    print(f'remove_header_footer: {image_path}')
+    # print(f'remove_header_footer: {image_path} {header_height_percent} {footer_height_percent}')
     img = cv2.imread(image_path)
     height, width = img.shape[:2]
+    print(f'{image_path}: height:{height}, width:{width}')
     header_height = int(height * header_height_percent)
     footer_height = int(height * footer_height_percent)
-
+    print(f'{image_path}: header_height:{header_height}, footer_height:{footer_height}')
     cropped_img = img[header_height:height - footer_height, 0:width]
-    cv2.imwrite(image_path, cropped_img)
+    cv2.imwrite(image_path + '.png', cropped_img)
 
 def convert_pdf_to_images(pdf_path, output_dir):
     process_id = uuid.uuid4().hex
     output_dir = output_dir + '/' + process_id
     print(f'convert_pdf_to_images:{pdf_path}-{output_dir}')
     os.makedirs(output_dir, exist_ok=True)
-    subprocess.run(['gs', '-dNOPAUSE', '-dBATCH', '-sDEVICE=pngalpha', '-r300', '-sOutputFile=' + os.path.join(output_dir, 'page%d.png'), pdf_path])
+    subprocess.run(['gs', '-dNOPAUSE', '-dBATCH', '-sDEVICE=pngalpha', '-r300', '-sOutputFile=' + os.path.join(output_dir, 'page%03d.png'), pdf_path])
     return output_dir
 
 
@@ -54,12 +55,13 @@ def extract_pdf_by_ocr(folder_location, header_height_percent, footer_height_per
         print(f'process filename:{filename}')
         if filename.endswith('.png'):
             img_path = os.path.join(output_dir, filename)
-            remove_header_footer(img_path, header_height_percent, footer_height_percent) # Remove header and footer from the image
+            # remove_header_footer(img_path , header_height_percent, footer_height_percent) # Remove header and footer from the image
             img = Image.open(img_path)
             text = pytesseract.image_to_string(img)
-            # print(f'text from OCR:{text}')
+            # print(f'text from OCR {filename}:{text}')
             # all_text += text + "\n\n"  # Add a separator between pages
             content.append(text)
+    # print(f'context===={content}')
     all_text = '##PAGE_BREAK##'.join(content)
     return all_text
 
@@ -81,10 +83,11 @@ def extract_content_from_pdf_by_ocr(pdf_file_path, header_height_percent, footer
         text = extract_pdf_by_ocr(pdf_file_path, header_height_percent, footer_height_percent, True)
 
         # return concatenated content
-        print(f'text:{text}')
+        # print(f'text:{text}')
         return text
 
-    except:
+    except Exception as e:
+        print(str(e))
         return ""
 
 def extract_content_from_pdf(pdf_file_path):
