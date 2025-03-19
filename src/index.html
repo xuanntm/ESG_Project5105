@@ -61,6 +61,12 @@
             font-size: 2em;
             color: white;
         }
+
+        #file-content {
+            width: 100%;
+            height: 300px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -68,7 +74,7 @@
     <h1>Upload PDF File</h1>
 
     <div class="select-container">
-        <label for="companies">Select Companies:</label>
+        <label for="company">Select Companies:</label>
         <!-- multiple -->
         <select id="company">
             <option value="ComA">Company A</option>
@@ -106,11 +112,17 @@
 
     <!-- <h1>Extract Text from PDF</h1> -->
     <!-- <input type="text" id="fileLocationInput" placeholder="Enter file location" maxlength="200"> -->
-    <div>
-        <label for="fileLocationInput">File Location:</label>
-        <input type="text" id="fileLocationInput" readonly>
-    </div>
 
+
+    <div>
+        <h2>Load Text File</h2>
+        <!-- <input type="text" id="filePathInput" placeholder="Enter file path"> -->
+        <label for="fileLocationInput">File Location:</label>
+        <!-- <input type="text" id="fileLocationInput" readonly> -->
+        <input type="text" id="fileLocationInput">
+        <button onclick="loadTextFile()">Load</button>
+        <textarea id="file-content"></textarea>
+    </div>
 
 
     <!-- <button onclick="extractText()">Extract Text</button>
@@ -131,6 +143,7 @@
             const headerHeight = document.getElementById('header-height').value;
             const footerHeight = document.getElementById('footer-height').value;
             const responseDiv = document.getElementById('response');
+            const fileLocationInput = document.getElementById('fileLocationInput');
 
 
             if (!fileInput.files.length) {
@@ -214,6 +227,35 @@
                 responseDiv.innerText = 'Error: ' + error.message;
             }
         }
+
+        async function loadTextFile() {
+            const filePathInput = document.getElementById('fileLocationInput');
+            const fileContentArea = document.getElementById('file-content');
+            const filePath = filePathInput.value;
+            const loadingIndicator = document.getElementById('loading-overlay');
+
+            if (!filePath) {
+                alert('Please enter a file path.');
+                return;
+            }
+
+            loadingIndicator.style.display = 'flex';
+            fileContentArea.value = '';
+
+            try {
+                const response = await fetch(`/load-text-file?path=${encodeURIComponent(filePath)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.text();
+                fileContentArea.value = data;
+            } catch (error) {
+                console.error('Error loading file:', error);
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
 
         async function extractText() {
             const fileLocationInput = document.getElementById('fileLocationInput');

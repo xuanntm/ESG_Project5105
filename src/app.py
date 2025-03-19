@@ -208,5 +208,19 @@ def process_esg_data():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/load-text-file')
+def load_text_file():
+    file_path = request.args.get('path')
+    if not file_path or not os.path.exists(file_path):
+        return 'File not found', 404
+    try:
+        with open(file_path, 'r') as f:
+            file_content = f.read()
+        return file_content
+    except Exception as e:
+        return f'Error reading file: {e}', 500
+
+        
+
 if __name__ == '__main__':
     app.run(debug=True)
