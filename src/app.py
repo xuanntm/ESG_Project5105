@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import urllib.parse
 from service.extract_service import extract_sentences, extract_content_from_pdf, extract_content_from_pdf_by_ocr, ESG_TEXT_FOLDER
 from service.nlp_service import nlp
-from service.openAI_service import openai_client
+from service.openAI_service import openai_client, extract_esg_values_openai
 import PyPDF2
 
 load_dotenv()
@@ -220,7 +220,21 @@ def load_text_file():
     except Exception as e:
         return f'Error reading file: {e}', 500
 
-        
+
+@app.route('/process-esg-data-by-path')
+def process_esg_data_v2():
+    file_path = request.args.get('path')
+    if not file_path or not os.path.exists(file_path):
+        return 'File not found', 404
+    try:
+        with open(file_path, 'r') as f:
+            file_content = f.read()
+        esg_metrict_values = extract_esg_values_openai(file_content)
+        return esg_metrict_values, 200
+    except Exception as e:
+        return f'Error reading file: {e}', 500
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

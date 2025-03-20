@@ -62,7 +62,7 @@
             color: white;
         }
 
-        #file-content {
+        #file-content, #esg-file-content {
             width: 100%;
             height: 300px;
             margin-top: 10px;
@@ -112,14 +112,13 @@
 
     <!-- <h1>Extract Text from PDF</h1> -->
     <!-- <input type="text" id="fileLocationInput" placeholder="Enter file location" maxlength="200"> -->
-
+    <label for="fileLocationInput">File Location:</label>
+    <!-- <input type="text" id="fileLocationInput" readonly> -->
+    <input type="text" id="fileLocationInput">
 
     <div>
         <h2>Load Text File</h2>
         <!-- <input type="text" id="filePathInput" placeholder="Enter file path"> -->
-        <label for="fileLocationInput">File Location:</label>
-        <!-- <input type="text" id="fileLocationInput" readonly> -->
-        <input type="text" id="fileLocationInput">
         <button onclick="loadTextFile()">Load</button>
         <textarea id="file-content"></textarea>
     </div>
@@ -128,12 +127,15 @@
     <!-- <button onclick="extractText()">Extract Text</button>
 
     <div id="textResponse"></div> -->
+    <div>
+        <h1>Extract Relevant ESG Sentences</h1>
+        <input type="text" id="esgIndicators" placeholder="Enter ESG indicators, separated by commas" hidden>
+        <button onclick="extractESGSentences()" hidden>Extract ESG Sentences</button>
 
-    <h1>Extract Relevant ESG Sentences</h1>
-    <input type="text" id="esgIndicators" placeholder="Enter ESG indicators, separated by commas">
-    <button onclick="extractESGSentences()">Extract ESG Sentences</button>
-
-    <div id="esgResponse"></div>
+        <div id="esgResponse"></div>
+        <button onclick="extractESGSentencesV2()">Extract ESG Sentences</button>
+        <textarea id="esg-file-content"></textarea>
+    </div>
 
     <script>
         async function uploadFileV2() {
@@ -244,6 +246,37 @@
 
             try {
                 const response = await fetch(`/load-text-file?path=${encodeURIComponent(filePath)}`);
+                if (!response.ok) {
+                    console.log(response)
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.text();
+                fileContentArea.value = data;
+            } catch (error) {
+                console.error('Error loading file:', error);
+                // fileContentArea.value = response.text()
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+
+        async function extractESGSentencesV2() {
+            const filePathInput = document.getElementById('fileLocationInput');
+            const fileContentArea = document.getElementById('esg-file-content');
+            const filePath = filePathInput.value;
+            const loadingIndicator = document.getElementById('loading-overlay');
+
+            if (!filePath) {
+                alert('Please enter a file path.');
+                return;
+            }
+
+            loadingIndicator.style.display = 'flex';
+            fileContentArea.value = '';
+
+            try {
+                const response = await fetch(`/process-esg-data-by-path?path=${encodeURIComponent(filePath)}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
